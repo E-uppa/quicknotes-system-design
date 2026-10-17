@@ -81,3 +81,56 @@ async function loadNotes() {
 
 loadButton.addEventListener("click", loadNotes);
 
+
+noteForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const title = titleInput.value.trim();
+  const body = bodyInput.value.trim();
+
+  if (!title) {
+    setStatus("Please enter a title.", "error");
+    titleInput.focus();
+    return;
+  }
+
+  if (title.length > 100) {
+    setStatus("The title cannot exceed 100 characters.", "error");
+    titleInput.focus();
+    return;
+  }
+
+  submitButton.disabled = true;
+  setStatus("Creating note...");
+
+  try {
+    const result = await request(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title,
+        body,
+        userId: 1
+      })
+    });
+
+    // JSONPlaceholder simulates creation but does not persist new posts.
+    // Keep the returned note in local UI state so it appears until a reload.
+    notes.unshift(result.data);
+    renderNotes();
+
+    noteForm.reset();
+
+    setStatus(
+      `Note created (status ${result.status}, id ${result.data.id}).`,
+      "success"
+    );
+  } catch (error) {
+    setStatus("Unable to create the note. Please try again.", "error");
+    console.error(error);
+  } finally {
+    submitButton.disabled = false;
+  }
+});
