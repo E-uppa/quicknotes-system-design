@@ -16,6 +16,7 @@ function setStatus(message, type = "") {
   statusMessage.className = type;
 }
 
+
 function renderNotes() {
   notesList.replaceChildren();
 
@@ -36,10 +37,20 @@ function renderNotes() {
     const body = document.createElement("p");
     body.textContent = note.body || "No body provided.";
 
-    item.append(title, body);
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-btn";
+    deleteButton.textContent = "Delete";
+
+    deleteButton.addEventListener("click", () => {
+      deleteNote(note.id, deleteButton);
+    });
+
+    item.append(title, body, deleteButton);
     notesList.appendChild(item);
   });
 }
+
 
 async function request(url, options = {}) {
   const response = await fetch(url, options);
@@ -134,3 +145,26 @@ noteForm.addEventListener("submit", async (event) => {
     submitButton.disabled = false;
   }
 });
+
+async function deleteNote(id, button) {
+  button.disabled = true;
+  setStatus("Deleting note...");
+
+  try {
+    const result = await request(`${API_URL}/${encodeURIComponent(id)}`, {
+      method: "DELETE"
+    });
+
+    // JSONPlaceholder simulates deletion but does not persist changes.
+    // Remove the note from local UI state after the successful response.
+    notes = notes.filter((note) => String(note.id) !== String(id));
+    renderNotes();
+
+    setStatus(`Note deleted (status ${result.status}).`, "success");
+  } catch (error) {
+    setStatus("Unable to delete the note. Please try again.", "error");
+    console.error(error);
+  } finally {
+    button.disabled = false;
+  }
+}
